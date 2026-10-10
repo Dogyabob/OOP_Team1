@@ -86,6 +86,29 @@ bool RecipeDB::insertRecipe(const Recipe& recipe) {
     return true;
 }
 
+bool RecipeDB::deleteRecipe(const string& name) {
+    string targetName = toLowerCase(name);
+
+    for (size_t index = 0; index < recipeList.size(); ++index) {
+        if (toLowerCase(recipeList[index].getName()) != targetName) {
+            continue;
+        }
+
+        Recipe removedRecipe = recipeList[index];
+        recipeList.erase(recipeList.begin() + index);
+
+        // Save right away so the recipe stays deleted after the program ends.
+        FileManager fileManager;
+        if (!fileManager.save(fileName, recipeList)) {
+            recipeList.insert(recipeList.begin() + index, removedRecipe);  // undo
+            return false;
+        }
+        return true;
+    }
+
+    return false;  // no recipe with that name
+}
+
 void RecipeDB::setSortOption(int option) {
     if (option == SORT_BY_NAME || option == SORT_BY_COOK_TIME) {
         sortOption = option;
