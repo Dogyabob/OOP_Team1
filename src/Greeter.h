@@ -6,7 +6,7 @@
 
 // Greeter : handles all interaction with the user.
 //           Shows the menu, reads the user's input and prints the results.
-// Uses RecipeDB (insert, search, sort option) and Recipe (input, output).
+// Uses RecipeDB (insert, delete, search, sort option) and Recipe (input, output).
 class Greeter {
 public:
     // Creates a Greeter that works with the given RecipeDB.
@@ -17,7 +17,7 @@ public:
     // until the user chooses to exit.
     void run();
 private:
-    RecipeDB& recipeDB;            // database used for insert, search and sort option
+    RecipeDB& recipeDB;            // database used for insert, delete, search and sort option
     int sortOption = SORT_BY_NAME; // sort option last set on RecipeDB (shown to the user)
 
     // Prints the main menu.
@@ -31,11 +31,15 @@ private:
     // Returns false if the user cancels (empty name or 'n' at the confirmation).
     bool inputRecipe(Recipe& recipe);
 
+    // Asks for the name of a recipe, shows it and deletes it from RecipeDB
+    // after the user confirms. An empty name cancels.
+    void deleteRecipe();
+
     // Asks for a search type and a keyword, searches RecipeDB
     // and prints the matching recipes.
     void searchRecipes();
 
-    // Shows each sort option with its order (ascending / descending),
+    // Shows each sort option with its order (ascending),
     // asks for one and sets it on RecipeDB.
     void selectSortOption();
 

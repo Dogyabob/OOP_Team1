@@ -10,7 +10,8 @@ enum MenuChoice {
     MENU_EXIT = 0,
     MENU_ADD_RECIPE = 1,
     MENU_SEARCH = 2,
-    MENU_SORT_OPTION = 3
+    MENU_SORT_OPTION = 3,
+    MENU_DELETE_RECIPE = 4
 };
 
 // Prints the prompt and returns one line typed by the user.
@@ -32,6 +33,14 @@ static bool isBlank(const string& text) {
         }
     }
     return true;
+}
+
+// Returns a copy of the text with every letter in lower case.
+static string toLowerCase(string text) {
+    for (char& letter : text) {
+        letter = static_cast<char>(tolower(static_cast<unsigned char>(letter)));
+    }
+    return text;
 }
 
 // Returns true if the text contains '|' or ';', which FileManager uses as separators.
@@ -126,6 +135,9 @@ void Greeter::run() {
         case MENU_SORT_OPTION:
             selectSortOption();
             break;
+        case MENU_DELETE_RECIPE:
+            deleteRecipe();
+            break;
         case MENU_EXIT:
             cout << "Goodbye!" << endl;
             return;
@@ -142,6 +154,7 @@ void Greeter::showMenu() {
     cout << MENU_ADD_RECIPE << ". Add a recipe" << endl;
     cout << MENU_SEARCH << ". Search recipes" << endl;
     cout << MENU_SORT_OPTION << ". Change sort order (now: " << sortOptionLabel(sortOption) << ")" << endl;
+    cout << MENU_DELETE_RECIPE << ". Delete a recipe" << endl;
     cout << MENU_EXIT << ". Exit" << endl;
     cout << "==========================" << endl;
 }
@@ -191,6 +204,35 @@ bool Greeter::inputRecipe(Recipe& recipe) {
     recipe.print();
     cout << "--------------------------" << endl;
     return askYesNo("Save this recipe?");
+}
+
+void Greeter::deleteRecipe() {
+    string name = readLine("Name of the recipe to delete (press Enter on an empty line to cancel): ");
+    if (!cin || isBlank(name)) {
+        cout << "Deleting was cancelled." << endl;
+        return;
+    }
+
+    // Name search matches parts of names, so pick the recipe with exactly this name.
+    for (const Recipe& recipe : recipeDB.search(SEARCH_BY_NAME, name)) {
+        if (toLowerCase(recipe.getName()) != toLowerCase(name)) {
+            continue;
+        }
+
+        cout << "--------------------------" << endl;
+        recipe.print();
+        cout << "--------------------------" << endl;
+        if (!askYesNo("Delete this recipe?")) {
+            cout << "Deleting was cancelled." << endl;
+        } else if (recipeDB.deleteRecipe(recipe.getName())) {
+            cout << "Recipe \"" << recipe.getName() << "\" was deleted." << endl;
+        } else {
+            cout << "Could not delete the recipe. Saving failed." << endl;
+        }
+        return;
+    }
+
+    cout << "No recipe is named \"" << name << "\"." << endl;
 }
 
 void Greeter::searchRecipes() {
