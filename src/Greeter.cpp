@@ -72,6 +72,32 @@ static vector<string> readList(const string& title) {
     return items;
 }
 
+// Returns a description of the sort option, including its order.
+static string sortOptionLabel(int option) {
+    if (option == SORT_BY_COOK_TIME) {
+        return "Cooking time (ascending)";
+    }
+    return "Name (ascending)";
+}
+
+// Asks a yes/no question until the user answers y or n.
+// Returns false for 'n' or if there is no more input.
+static bool askYesNo(const string& question) {
+    while (cin) {
+        string answer = readLine(question + " (y/n): ");
+        if (answer == "y" || answer == "Y") {
+            return true;
+        }
+        if (answer == "n" || answer == "N") {
+            return false;
+        }
+        if (cin) {
+            cout << "Please enter y or n." << endl;
+        }
+    }
+    return false;
+}
+
 Greeter::Greeter(RecipeDB& db) : recipeDB(db) {}
 
 void Greeter::run() {
@@ -83,8 +109,10 @@ void Greeter::run() {
 
         switch (choice) {
         case MENU_ADD_RECIPE: {
-            Recipe recipe = inputRecipe();
-            if (recipeDB.insertRecipe(recipe)) {
+            Recipe recipe;
+            if (!inputRecipe(recipe)) {
+                cout << "Adding the recipe was cancelled." << endl;
+            } else if (recipeDB.insertRecipe(recipe)) {
                 cout << "Recipe \"" << recipe.getName() << "\" was added." << endl;
             } else {
                 cout << "Could not add the recipe. "
@@ -113,7 +141,7 @@ void Greeter::showMenu() {
     cout << "========== MENU ==========" << endl;
     cout << MENU_ADD_RECIPE << ". Add a recipe" << endl;
     cout << MENU_SEARCH << ". Search recipes" << endl;
-    cout << MENU_SORT_OPTION << ". Change sort order" << endl;
+    cout << MENU_SORT_OPTION << ". Change sort order (now: " << sortOptionLabel(sortOption) << ")" << endl;
     cout << MENU_EXIT << ". Exit" << endl;
     cout << "==========================" << endl;
 }
@@ -128,13 +156,14 @@ int Greeter::getUserChoice() {
     return toNumber(line);  // -1 for invalid input, handled as an invalid choice
 }
 
-Recipe Greeter::inputRecipe() {
+bool Greeter::inputRecipe(Recipe& recipe) {
     string name;
-    while (cin) {
-        name = readLine("Recipe name: ");
-        if (isBlank(name)) {
-            cout << "The name cannot be empty." << endl;
-        } else if (hasSeparator(name)) {
+    while (true) {
+        name = readLine("Recipe name (press Enter on an empty line to cancel): ");
+        if (!cin || isBlank(name)) {
+            return false;
+        }
+        if (hasSeparator(name)) {
             cout << "'|' and ';' cannot be used in the name." << endl;
         } else {
             break;
@@ -155,7 +184,13 @@ Recipe Greeter::inputRecipe() {
         cookTime = 0;
     }
 
-    return Recipe(name, ingredients, steps, cookTime);
+    recipe = Recipe(name, ingredients, steps, cookTime);
+
+    // Last chance to cancel after seeing everything that was typed.
+    cout << "--------------------------" << endl;
+    recipe.print();
+    cout << "--------------------------" << endl;
+    return askYesNo("Save this recipe?");
 }
 
 void Greeter::searchRecipes() {
@@ -195,14 +230,16 @@ void Greeter::searchRecipes() {
 
 void Greeter::selectSortOption() {
     cout << endl;
+    cout << "Current sort order: " << sortOptionLabel(sortOption) << endl;
     cout << "Sort results by:" << endl;
-    cout << SORT_BY_NAME << ". Name" << endl;
-    cout << SORT_BY_COOK_TIME << ". Cooking time" << endl;
+    cout << SORT_BY_NAME << ". " << sortOptionLabel(SORT_BY_NAME) << endl;
+    cout << SORT_BY_COOK_TIME << ". " << sortOptionLabel(SORT_BY_COOK_TIME) << endl;
 
     int option = getUserChoice();
     if (option == SORT_BY_NAME || option == SORT_BY_COOK_TIME) {
         recipeDB.setSortOption(option);
-        cout << "Sort order changed." << endl;
+        sortOption = option;
+        cout << "Sort order changed to: " << sortOptionLabel(sortOption) << endl;
     } else {
         cout << "Invalid sort option. The sort order was not changed." << endl;
     }
@@ -214,7 +251,8 @@ void Greeter::showResults(const vector<Recipe>& recipes) {
         return;
     }
 
-    cout << recipes.size() << " recipe(s) found." << endl;
+    cout << recipes.size() << " recipe(s) found. "
+         << "Sorted by " << sortOptionLabel(sortOption) << "." << endl;
     for (const Recipe& recipe : recipes) {
         cout << "--------------------------" << endl;
         recipe.print();
