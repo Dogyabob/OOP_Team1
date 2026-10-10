@@ -42,6 +42,10 @@ public:
     // or if saving fails.
     bool insertRecipe(const Recipe& recipe);
 
+    // Removs the recipe with the given-name and saves the whole list to the file
+    // Return false (And remove nothing) if no recipe has that hame or if saving fails.
+    bool deleteRecipe(const std::string& name);
+
     // Changes the display order of search results (a SortOption value).
     // An unknown option is ignored and the current order is kept.
     void setSortOption(int option);
