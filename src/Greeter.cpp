@@ -1,0 +1,223 @@
+#include "Greeter.h"
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cctype>
+using namespace std;
+
+// Menu numbers shown by showMenu().
+enum MenuChoice {
+    MENU_EXIT = 0,
+    MENU_ADD_RECIPE = 1,
+    MENU_SEARCH = 2,
+    MENU_SORT_OPTION = 3
+};
+
+// Prints the prompt and returns one line typed by the user.
+// Returns "" if there is no more input.
+static string readLine(const string& prompt) {
+    cout << prompt;
+    string line;
+    if (!getline(cin, line)) {
+        return "";
+    }
+    return line;
+}
+
+// Returns true if the text has no visible character.
+static bool isBlank(const string& text) {
+    for (char letter : text) {
+        if (!isspace(static_cast<unsigned char>(letter))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Returns true if the text contains '|' or ';', which FileManager uses as separators.
+static bool hasSeparator(const string& text) {
+    return text.find('|') != string::npos || text.find(';') != string::npos;
+}
+
+// Converts text such as "30" to a number.
+// Returns -1 if the text is not a non-negative whole number.
+static int toNumber(const string& text) {
+    if (text.empty() || text.size() > 6) {
+        return -1;
+    }
+    for (char letter : text) {
+        if (!isdigit(static_cast<unsigned char>(letter))) {
+            return -1;
+        }
+    }
+    return stoi(text);
+}
+
+// Reads lines until the user enters an empty line and returns them as a list.
+// Lines with '|' or ';' are rejected and must be typed again.
+static vector<string> readList(const string& title) {
+    vector<string> items;
+    cout << title << " (press Enter on an empty line to finish)" << endl;
+    while (cin) {
+        string line = readLine("- ");
+        if (line.empty()) {
+            break;
+        }
+        if (hasSeparator(line)) {
+            cout << "'|' and ';' cannot be used. Please type it again." << endl;
+            continue;
+        }
+        items.push_back(line);
+    }
+    return items;
+}
+
+Greeter::Greeter(RecipeDB& db) : recipeDB(db) {}
+
+void Greeter::run() {
+    cout << "Welcome to the Recipe Manager!" << endl;
+
+    while (true) {
+        showMenu();
+        int choice = getUserChoice();
+
+        switch (choice) {
+        case MENU_ADD_RECIPE: {
+            Recipe recipe = inputRecipe();
+            if (recipeDB.insertRecipe(recipe)) {
+                cout << "Recipe \"" << recipe.getName() << "\" was added." << endl;
+            } else {
+                cout << "Could not add the recipe. "
+                     << "The name may be empty or already used, or saving failed." << endl;
+            }
+            break;
+        }
+        case MENU_SEARCH:
+            searchRecipes();
+            break;
+        case MENU_SORT_OPTION:
+            selectSortOption();
+            break;
+        case MENU_EXIT:
+            cout << "Goodbye!" << endl;
+            return;
+        default:
+            cout << "Invalid choice. Please enter a number from the menu." << endl;
+            break;
+        }
+    }
+}
+
+void Greeter::showMenu() {
+    cout << endl;
+    cout << "========== MENU ==========" << endl;
+    cout << MENU_ADD_RECIPE << ". Add a recipe" << endl;
+    cout << MENU_SEARCH << ". Search recipes" << endl;
+    cout << MENU_SORT_OPTION << ". Change sort order" << endl;
+    cout << MENU_EXIT << ". Exit" << endl;
+    cout << "==========================" << endl;
+}
+
+int Greeter::getUserChoice() {
+    string line = readLine("Select: ");
+
+    // No more input (e.g. end of file) : exit instead of looping forever.
+    if (!cin) {
+        return MENU_EXIT;
+    }
+    return toNumber(line);  // -1 for invalid input, handled as an invalid choice
+}
+
+Recipe Greeter::inputRecipe() {
+    string name;
+    while (cin) {
+        name = readLine("Recipe name: ");
+        if (isBlank(name)) {
+            cout << "The name cannot be empty." << endl;
+        } else if (hasSeparator(name)) {
+            cout << "'|' and ';' cannot be used in the name." << endl;
+        } else {
+            break;
+        }
+    }
+
+    vector<string> ingredients = readList("Ingredients");
+    vector<string> steps = readList("Cooking steps");
+
+    int cookTime = -1;
+    while (cin && cookTime < 0) {
+        cookTime = toNumber(readLine("Cooking time (minutes): "));
+        if (cookTime < 0) {
+            cout << "Please enter a whole number of minutes (e.g. 30)." << endl;
+        }
+    }
+    if (cookTime < 0) {
+        cookTime = 0;
+    }
+
+    return Recipe(name, ingredients, steps, cookTime);
+}
+
+void Greeter::searchRecipes() {
+    cout << endl;
+    cout << "Search by:" << endl;
+    cout << SEARCH_BY_NAME << ". Name" << endl;
+    cout << SEARCH_BY_INGREDIENT << ". Ingredient" << endl;
+    cout << SEARCH_BY_MAX_COOK_TIME << ". Maximum cooking time" << endl;
+    cout << SEARCH_LIST_ALL << ". Show all recipes" << endl;
+
+    int type = getUserChoice();
+    string keyword;
+
+    switch (type) {
+    case SEARCH_BY_NAME:
+        keyword = readLine("Part of the name: ");
+        break;
+    case SEARCH_BY_INGREDIENT:
+        keyword = readLine("Ingredient: ");
+        break;
+    case SEARCH_BY_MAX_COOK_TIME:
+        keyword = readLine("Maximum cooking time (minutes): ");
+        if (toNumber(keyword) < 0) {
+            cout << "Please enter a whole number of minutes (e.g. 30)." << endl;
+            return;
+        }
+        break;
+    case SEARCH_LIST_ALL:
+        break;  // no keyword needed
+    default:
+        cout << "Invalid search type." << endl;
+        return;
+    }
+
+    showResults(recipeDB.search(type, keyword));
+}
+
+void Greeter::selectSortOption() {
+    cout << endl;
+    cout << "Sort results by:" << endl;
+    cout << SORT_BY_NAME << ". Name" << endl;
+    cout << SORT_BY_COOK_TIME << ". Cooking time" << endl;
+
+    int option = getUserChoice();
+    if (option == SORT_BY_NAME || option == SORT_BY_COOK_TIME) {
+        recipeDB.setSortOption(option);
+        cout << "Sort order changed." << endl;
+    } else {
+        cout << "Invalid sort option. The sort order was not changed." << endl;
+    }
+}
+
+void Greeter::showResults(const vector<Recipe>& recipes) {
+    if (recipes.empty()) {
+        cout << "No recipes found." << endl;
+        return;
+    }
+
+    cout << recipes.size() << " recipe(s) found." << endl;
+    for (const Recipe& recipe : recipes) {
+        cout << "--------------------------" << endl;
+        recipe.print();
+    }
+    cout << "--------------------------" << endl;
+}
