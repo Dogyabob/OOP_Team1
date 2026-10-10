@@ -17,7 +17,8 @@ public:
     // until the user chooses to exit.
     void run();
 private:
-    RecipeDB& recipeDB;  // database used for insert, search and sort option
+    RecipeDB& recipeDB;            // database used for insert, search and sort option
+    int sortOption = SORT_BY_NAME; // sort option last set on RecipeDB (shown to the user)
 
     // Prints the main menu.
     void showMenu();
@@ -25,15 +26,17 @@ private:
     // Reads a menu number from the user and returns it.
     int getUserChoice();
 
-    // Reads name, ingredients, steps and cooking time from the user
-    // and returns them as a new Recipe.
-    Recipe inputRecipe();
+    // Reads name, ingredients, steps and cooking time from the user into recipe,
+    // then asks the user to confirm.
+    // Returns false if the user cancels (empty name or 'n' at the confirmation).
+    bool inputRecipe(Recipe& recipe);
 
     // Asks for a search type and a keyword, searches RecipeDB
     // and prints the matching recipes.
     void searchRecipes();
 
-    // Asks for a sort option and sets it on RecipeDB.
+    // Shows each sort option with its order (ascending / descending),
+    // asks for one and sets it on RecipeDB.
     void selectSortOption();
 
     // Prints the given recipes. Prints a message instead if the list is empty.
