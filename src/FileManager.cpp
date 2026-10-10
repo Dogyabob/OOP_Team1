@@ -4,6 +4,7 @@
 #include "Recipe.h"
 #include <sstream>
 #include <fstream>
+#include <stdexcept>
 using namespace std;
 
 static vector<string> split(const string& str, char delimiter) {
@@ -60,12 +61,18 @@ static vector<string> split(const string& str, char delimiter) {
             while (getline(myFile, line)) {
                 vector<string> fields = split(line, '|');
                 if (fields.size() < 4) continue;
+                int cookTime;
+                try {
+                    cookTime = stoi(fields[3]);
+                }catch(exception& e) {
+                    continue;
+                }
                 vector<string> ingredients = split(fields[1], ';');
                 vector<string> steps = split(fields[2], ';');
                 r.setName(fields[0]);
                 r.setIngredients(ingredients);
                 r.setSteps(steps);
-                r.setCookTime(stoi(fields[3]));
+                r.setCookTime(cookTime);
                 recipes.push_back(r);
             }
             myFile.close();
