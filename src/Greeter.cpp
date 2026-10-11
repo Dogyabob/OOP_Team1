@@ -153,7 +153,7 @@ void Greeter::showMenu() {
     cout << "========== MENU ==========" << endl;
     cout << MENU_ADD_RECIPE << ". Add a recipe" << endl;
     cout << MENU_SEARCH << ". Search recipes" << endl;
-    cout << MENU_SORT_OPTION << ". Change sort order (now: " << sortOptionLabel(sortOption) << ")" << endl;
+    cout << MENU_SORT_OPTION << ". Change sort order: " << sortOptionLabel(sortOption) << endl;
     cout << MENU_DELETE_RECIPE << ". Delete a recipe" << endl;
     cout << MENU_EXIT << ". Exit" << endl;
     cout << "==========================" << endl;
@@ -172,7 +172,7 @@ int Greeter::getUserChoice() {
 bool Greeter::inputRecipe(Recipe& recipe) {
     string name;
     while (true) {
-        name = readLine("Recipe name (press Enter on an empty line to cancel): ");
+        name = readLine("Recipe name (Enter to cancel): ");
         if (!cin || isBlank(name)) {
             return false;
         }
