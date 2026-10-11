@@ -1,0 +1,15 @@
+# 빌드 결과물
+*.exe
+*.obj
+*.pdb
+*.ilk
+
+# 실행 중 생기는 데이터 파일
+recipes.txt
+
+# 에디터 개인 설정
+.vscode/
+
+# OS
+Thumbs.db
+.DS_Store
